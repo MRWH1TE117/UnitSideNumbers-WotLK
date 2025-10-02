@@ -4,7 +4,7 @@ Lightweight addon for **World of Warcraft: Wrath of the Lich King 3.3.5a (12340)
 
 <img width="474" height="125" alt="image" src="https://github.com/user-attachments/assets/e7cba24b-6e1c-4088-94c3-0a06f5621fc5" />
 
----
+## Unit frames here are my custom modified "UnitFramesImproved" (not part of this addon). I will add this modification soon.
 
 ## Key Features
 
@@ -14,7 +14,7 @@ Lightweight addon for **World of Warcraft: Wrath of the Lich King 3.3.5a (12340)
   3. **Power current / max** (hidden if the unit has no power bar)
 - **Stable layering** — independent holder with boosted `FrameLevel`, so text never gets occluded.
 - **Player level color** (top-right of PlayerFrame) with multiple modes:
-  - `RANGE` — by level ranges (≤19 gray, ≤39 white, ≤59 light blue, ≤69 orange, 70–79 green, 80 yellow)
+  - `RANGE` — by level ranges (≤19 gray, ≤39 white, ≤59 light blue, ≤69 orange, 70-79 green, 80 yellow)
   - `CLASS` — player class color
   - `STATIC` — fixed color via `/usn lvlrgb R G B`
 - **Simple slash commands** for position reset and frame strata.
