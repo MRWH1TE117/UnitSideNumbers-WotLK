@@ -1,0 +1,14 @@
+.history/
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
+*.zip
+*.rar
+*.7z
+*.bak
+*.old
+*.tmp
+*.log
+release/
+build/
