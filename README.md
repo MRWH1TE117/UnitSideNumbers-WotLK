@@ -4,7 +4,8 @@ Lightweight addon for **World of Warcraft: Wrath of the Lich King 3.3.5a (12340)
 
 <img width="474" height="125" alt="image" src="https://github.com/user-attachments/assets/e7cba24b-6e1c-4088-94c3-0a06f5621fc5" />
 
-Unit frames here are my custom modified "UnitFramesImproved" (not part of this addon). I will add this modification soon.
+Unit frames here are my custom modified "[UnitFramesImproved](https://www.curseforge.com/wow/addons/unitframesimproved)
+" (not part of this addon). I will add this modification soon.
 
 ## Key Features
 
