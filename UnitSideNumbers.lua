@@ -1,6 +1,6 @@
 -- UnitSideNumbers (WotLK 3.3.5a) — v1.5
 -- • Stabilne warstwy (strata/level) dla linii, by nic nie chowało %HP
--- • Kolor poziomu wg zakresu (RANGE: 70–79 zielony, 80 żółty, itd.)
+-- • Kolor poziomu wg zakresu (RANGE: 70-79 zielony, 80 żółty, itd.)
 
 local cfg = {
   font = "Fonts\\FRIZQT__.TTF",
