@@ -2,5 +2,5 @@
 ## Title: UnitSideNumbers
 ## Notes: Boczne liczby HP/Power dla player/target/focus (WotLK 3.3.5a)
 ## Author: MRWH1TE117
-## Version: 1.0
+## Version: 1.6.1
 UnitSideNumbers.lua
