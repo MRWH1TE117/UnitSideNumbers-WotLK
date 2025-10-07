@@ -1,48 +1,52 @@
--- UnitSideNumbers (WotLK 3.3.5a) — v1.5
--- • Stabilne warstwy (strata/level) dla linii, by nic nie chowało %HP
--- • Kolor poziomu wg zakresu (RANGE: 70-79 zielony, 80 żółty, itd.)
+-- UnitSideNumbers (WotLK 3.3.5a) — v1.6.1
+-- • Stabilne warstwy, kolor poziomu (RANGE/CLASS/STATIC)
+-- • Płynne aktualizacje z OnValueChanged
+-- • Trunkowanie zamiast zaokrąglania (18.9k ≠ 19k), %HP bez podbijania
 
 local cfg = {
   font = "Fonts\\FRIZQT__.TTF",
   size = 10,
   outline = "OUTLINE",
-  spacing = -2,       -- odstęp między liniami 2 i 3
-  offset = -2,         -- odległość bloku od ramki
+  spacing = -2,
+  offset = -2,
   width = 120,
   height = 40,
-  percentYOffset = 2, -- %HP (linia 1) lekko wyżej
-  holderFrameLevelBoost = 12, -- o ile podnieść ponad ramkę Blizz
-  -- Poziom gracza (po prawej od góry PlayerFrame)
+  percentYOffset = 2,
+  holderFrameLevelBoost = 12,
   levelOffsetX = -10,
   levelOffsetY = -17,
 }
 
--- zapamiętywane między /reload
 UnitSideNumbers_Strata     = UnitSideNumbers_Strata     or "MEDIUM"
-UnitSideNumbers_LevelMode  = UnitSideNumbers_LevelMode  or "RANGE" -- RANGE | CLASS | STATIC
-UnitSideNumbers_LevelColor = UnitSideNumbers_LevelColor or {1,1,1} -- dla STATIC
+UnitSideNumbers_LevelMode  = UnitSideNumbers_LevelMode  or "RANGE"
+UnitSideNumbers_LevelColor = UnitSideNumbers_LevelColor or {1,1,1}
 
--- Kolory dla trybu RANGE
 local function colorByLevelRange(lvl)
   if not lvl or lvl <= 0 then return 1,1,1 end
-  if lvl <= 19 then return 0.7,0.7,0.7      -- szary
-  elseif lvl <= 39 then return 1,1,1        -- biały
-  elseif lvl <= 59 then return 0.5,0.8,1    -- jasnoniebieski
-  elseif lvl <= 69 then return 1,0.65,0.2   -- pomarańcz
-  elseif lvl <= 79 then return 0.3,1,0.3    -- zielony
-  else return 1,1,0.2                       -- 80 = żółty
+  if lvl <= 19 then return 0.7,0.7,0.7
+  elseif lvl <= 39 then return 1,1,1
+  elseif lvl <= 59 then return 0.5,0.8,1
+  elseif lvl <= 69 then return 1,0.65,0.2
+  elseif lvl <= 79 then return 0.3,1,0.3
+  else return 1,1,0.2
   end
 end
 
+-- TRUNKOWANIE (nie zaokrąglamy w górę)
 local function short(n)
   if not n then return "0" end
-  if n >= 1e6 then return (string.format("%.1fm", n/1e6)):gsub("%.?0m","m") end
-  if n >= 1e3 then return (string.format("%.1fk", n/1e3)):gsub("%.?0k","k") end
-  return tostring(n)
+  if n >= 1000000 then
+    local x = math.floor(n / 100000) / 10   -- 1 dziesiętna, ucięta
+    local s = string.format("%.1fm", x)
+    return (s:gsub("%.0m","m"))
+  elseif n >= 1000 then
+    local x = math.floor(n / 100) / 10      -- 1 dziesiętna, ucięta
+    local s = string.format("%.1fk", x)
+    return (s:gsub("%.0k","k"))
+  end
+  return tostring(math.floor(n + 0.0))
 end
 
--- Tworzy niezależny holder (rodzic = UIParent) i kotwiczy do ramki Blizz,
--- żeby strata/level nie były ograniczane przez oryginalną ramkę.
 local function makeBlock(anchorFrame, side, justify)
   local holder = CreateFrame("Frame", nil, UIParent)
   holder:SetFrameStrata(UnitSideNumbers_Strata or "MEDIUM")
@@ -74,7 +78,7 @@ local function makeBlock(anchorFrame, side, justify)
 end
 
 local frames = { player=nil, target=nil, focus=nil }
-local levelHolder, levelFS -- osobny holder dla poziomu (stabilne warstwy)
+local levelHolder, levelFS
 
 local function ensureFrames()
   if not frames.player and PlayerFrame then
@@ -104,23 +108,70 @@ end
 local function colorLevel()
   if not levelFS then return end
   local mode = (UnitSideNumbers_LevelMode or "RANGE"):upper()
-
   if mode == "STATIC" then
     local c = UnitSideNumbers_LevelColor or {1,1,1}
     levelFS:SetTextColor(c[1] or 1, c[2] or 1, c[3] or 1)
-    return
   elseif mode == "CLASS" then
     local _, engClass = UnitClass("player")
     local col = RAID_CLASS_COLORS and RAID_CLASS_COLORS[engClass]
-    if col then levelFS:SetTextColor(col.r, col.g, col.b); return end
-    levelFS:SetTextColor(1,1,1); return
-  else -- RANGE (domyślnie)
+    if col then levelFS:SetTextColor(col.r, col.g, col.b) else levelFS:SetTextColor(1,1,1) end
+  else
     local lvl = UnitLevel("player")
     local r,g,b = colorByLevelRange(lvl)
     levelFS:SetTextColor(r,g,b)
-    return
   end
 end
+
+-- ======== PŁYNNE aktualizacje z pasków =========
+local function updateFromBar(unit, block, isHealth, val, minV, maxV)
+  if not block then return end
+  maxV = maxV or 0
+  val  = val or 0
+
+  if isHealth then
+    -- %HP TRUNKOWANE (bez zaokrąglania w górę)
+    local pct = (maxV > 0) and math.floor((val / maxV) * 100) or 0
+    if pct > 100 then pct = 100 end
+    block.lines[1]:SetText(pct .. "%")
+    block.lines[2]:SetText(short(val) .. " / " .. short(maxV))
+  else
+    if maxV > 0 then
+      block.lines[3]:SetText(short(val) .. " / " .. short(maxV))
+    else
+      block.lines[3]:SetText("")
+    end
+  end
+end
+
+local function hookBar(bar, unit, block, isHealth)
+  if not bar or not block or bar.__usnHooked then return end
+  bar.__usnHooked = true
+  bar:HookScript("OnValueChanged", function(self, v)
+    local minV, maxV = self:GetMinMaxValues()
+    updateFromBar(unit, block, isHealth, v, minV, maxV)
+  end)
+  -- na zmianę maksymalnej wartości (np. formy, buffy)
+  if not bar.__usnMMVHooked then
+    bar.__usnMMVHooked = true
+    hooksecurefunc(bar, "SetMinMaxValues", function(self, minV, maxV)
+      local v = self:GetValue()
+      updateFromBar(unit, block, isHealth, v, minV, maxV)
+    end)
+  end
+end
+
+local function hookAllBars()
+  ensureFrames()
+  hookBar(_G.PlayerFrameHealthBar, "player", frames.player, true)
+  hookBar(_G.PlayerFrameManaBar,   "player", frames.player, false)
+  hookBar(_G.TargetFrameHealthBar, "target", frames.target, true)
+  hookBar(_G.TargetFrameManaBar,   "target", frames.target, false)
+  if _G.FocusFrame then
+    hookBar(_G.FocusFrameHealthBar, "focus", frames.focus, true)
+    hookBar(_G.FocusFrameManaBar,   "focus", frames.focus, false)
+  end
+end
+-- ==============================================
 
 local function fmtUnit(unit, block)
   if not block or not UnitExists(unit) then
@@ -128,13 +179,13 @@ local function fmtUnit(unit, block)
     return
   end
   local hp, hpMax = UnitHealth(unit) or 0, UnitHealthMax(unit) or 1
-  local p = (hpMax > 0) and math.floor((hp/hpMax)*100 + 0.5) or 0
+  local pct = (hpMax > 0) and math.floor((hp/hpMax)*100) or 0
+  if pct > 100 then pct = 100 end
   local pow, powMax = UnitPower(unit) or 0, UnitPowerMax(unit) or 0
-  local hasPower = (powMax and powMax > 0)
 
-  block.lines[1]:SetText(p.."%")
+  block.lines[1]:SetText(pct.."%")
   block.lines[2]:SetText(short(hp).." / "..short(hpMax))
-  if hasPower then
+  if powMax > 0 then
     block.lines[3]:SetText(short(pow).." / "..short(powMax))
   else
     block.lines[3]:SetText("")
@@ -143,6 +194,7 @@ end
 
 local function refreshAll()
   ensureFrames()
+  hookAllBars()
   fmtUnit("player", frames.player)
   fmtUnit("target", frames.target)
   fmtUnit("focus",  frames.focus)
@@ -166,7 +218,13 @@ f:RegisterEvent("PLAYER_LEVEL_UP")
 f:SetScript("OnEvent", function(_, evt, unit)
   if evt == "PLAYER_ENTERING_WORLD" then
     local t=0 local d=CreateFrame("Frame")
-    d:SetScript("OnUpdate", function(_,e) t=t+e if t>=0.1 then d:SetScript("OnUpdate", nil) refreshAll() end end)
+    d:SetScript("OnUpdate", function(_,e)
+      t=t+e
+      if t>=0.1 then
+        d:SetScript("OnUpdate", nil)
+        refreshAll()
+      end
+    end)
     return
   end
   if evt == "PLAYER_LEVEL_UP" then
@@ -189,7 +247,6 @@ f:SetScript("OnEvent", function(_, evt, unit)
   end
 end)
 
--- Komendy: reset / strata / tryb kolorowania / statyczny kolor
 SLASH_USN1 = "/usn"
 SlashCmdList["USN"] = function(msg)
   msg = (msg or ""):lower()
