@@ -1,7 +1,8 @@
--- UnitSideNumbers (WotLK 3.3.5a) — v1.6.1
+-- UnitSideNumbers (WotLK 3.3.5a) — v1.7.1
 -- • Stabilne warstwy, kolor poziomu (RANGE/CLASS/STATIC)
 -- • Płynne aktualizacje z OnValueChanged
 -- • Trunkowanie zamiast zaokrąglania (18.9k ≠ 19k), %HP bez podbijania
+-- NOWE: Poprawka aktualizacji wyświetlania wartości dla pustego targetu i focusa
 
 local cfg = {
   font = "Fonts\\FRIZQT__.TTF",
@@ -77,6 +78,31 @@ local function makeBlock(anchorFrame, side, justify)
   return holder
 end
 
+local fmtUnit
+
+local function attachHideShow(frame, unit, block)
+  if not frame or not block then return end
+
+  -- jeśli frame już jest ukryty – wyczyść teksty od razu
+  if not frame:IsShown() then
+    for i=1,3 do block.lines[i]:SetText("") end
+  end
+
+  frame:HookScript("OnHide", function()
+    for i=1,3 do block.lines[i]:SetText("") end
+  end)
+
+  frame:HookScript("OnShow", function()
+    if UnitExists(unit) then
+      if fmtUnit then fmtUnit(unit, block) end
+    else
+      for i=1,3 do block.lines[i]:SetText("") end
+    end
+  end)
+end
+
+
+
 local frames = { player=nil, target=nil, focus=nil }
 local levelHolder, levelFS
 
@@ -86,9 +112,11 @@ local function ensureFrames()
   end
   if not frames.target and TargetFrame then
     frames.target = makeBlock(TargetFrame, "LEFT", "RIGHT")
+	attachHideShow(TargetFrame, "target", frames.target)
   end
   if not frames.focus and FocusFrame then
     frames.focus  = makeBlock(FocusFrame, "LEFT", "RIGHT")
+	attachHideShow(FocusFrame, "focus", frames.focus)
   end
   if not levelHolder and PlayerFrame then
     levelHolder = CreateFrame("Frame", nil, UIParent)
@@ -125,11 +153,17 @@ end
 -- ======== PŁYNNE aktualizacje z pasków =========
 local function updateFromBar(unit, block, isHealth, val, minV, maxV)
   if not block then return end
+
+  -- jeśli unit nie istnieje, wyczyść linie i wyjdź
+  if not UnitExists(unit) then
+    for i=1,3 do block.lines[i]:SetText("") end
+    return
+  end
+
   maxV = maxV or 0
   val  = val or 0
 
   if isHealth then
-    -- %HP TRUNKOWANE (bez zaokrąglania w górę)
     local pct = (maxV > 0) and math.floor((val / maxV) * 100) or 0
     if pct > 100 then pct = 100 end
     block.lines[1]:SetText(pct .. "%")
@@ -142,6 +176,7 @@ local function updateFromBar(unit, block, isHealth, val, minV, maxV)
     end
   end
 end
+
 
 local function hookBar(bar, unit, block, isHealth)
   if not bar or not block or bar.__usnHooked then return end
@@ -173,7 +208,7 @@ local function hookAllBars()
 end
 -- ==============================================
 
-local function fmtUnit(unit, block)
+fmtUnit = function(unit, block)
   if not block or not UnitExists(unit) then
     if block then for i=1,3 do block.lines[i]:SetText("") end end
     return
