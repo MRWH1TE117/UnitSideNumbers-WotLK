@@ -84,15 +84,6 @@ Saved globals:
 
 ---
 
-## Screenshots
-
-Place your screenshot at **`docs/preview.png`** to display the image above.  
-You can add more images in `docs/` and reference them, e.g.:
-
-```md
-![Target & Focus](docs/target_focus.png)
-```
-
 ## Changelog
 
 ```md
