@@ -1,4 +1,4 @@
-# UnitSideNumbers-WotLK
+# UnitSideNumbers (WotLK 3.3.5a)
 
 Lightweight addon for **World of Warcraft: Wrath of the Lich King 3.3.5a (12340)** that adds **clear side numbers** next to Blizzard’s default frames (Player/Target/Focus): **%HP**, **current/max HP**, and **current/max Power**. Separate holders and boosted frame levels ensure nothing overlaps or hides the text.
 
